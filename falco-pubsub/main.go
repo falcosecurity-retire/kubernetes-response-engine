@@ -99,7 +99,7 @@ func publish(topic *pubsub.Topic, msg []byte, wg *sync.WaitGroup) {
 
 	id, err := result.Get(ctxGet)
 	if err != nil {
-		log.Fatalf("error publishing message: %v")
+		log.Fatalf("error publishing message: %v", err)
 	}
 	fmt.Printf("Published a message with a message ID: %s\n", id)
 }
