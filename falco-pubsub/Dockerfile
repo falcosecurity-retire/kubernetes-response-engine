@@ -1,8 +1,9 @@
-FROM golang:1.11 as builder
+FROM golang:1.12 as builder
 WORKDIR /falco-pubsub
 COPY go.mod go.sum ./
 COPY *.go ./
 RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" -o falco-pubsub
+RUN strip falco-pubsub
 
 
 FROM alpine

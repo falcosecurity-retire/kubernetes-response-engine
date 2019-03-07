@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -20,7 +21,6 @@ import (
 var (
 	googleProjectID       = os.Getenv("GOOGLE_PROJECT_ID")
 	googleCredentialsData = os.Getenv("GOOGLE_CREDENTIALS_DATA")
-	googleTopicName       = os.Getenv("GOOGLE_TOPIC_NAME")
 	slugRegularExpression = regexp.MustCompile("[^a-z0-9]+")
 )
 
@@ -48,12 +48,6 @@ func main() {
 
 	log.Printf("Created new client for Google Project ID: %s", googleProjectID)
 
-	_, _ = pubsubClient.CreateTopic(context.Background(), googleTopicName)
-
-	topic := pubsubClient.Topic(googleTopicName)
-	defer topic.Stop()
-	log.Printf("Using topic '%s'", googleTopicName)
-
 	pipe, err := os.OpenFile(*pipePath, os.O_RDONLY, 0600)
 	if err != nil {
 		log.Fatal(err)
@@ -69,17 +63,22 @@ func main() {
 	for scanner.Scan() {
 		msg := []byte(scanner.Text())
 		wg.Add(1)
-		go publish(topic, msg, wg)
+		go publish(pubsubClient, msg, wg)
 	}
 
 	wg.Wait()
 
 }
 
-func publish(topic *pubsub.Topic, msg []byte, wg *sync.WaitGroup) {
+func publish(pubsubClient *pubsub.Client, msg []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	alert := parseAlert(msg)
+
+	googleTopicName := subjectAndRuleSlug(alert)
+
+	topic := pubsubClient.Topic(googleTopicName)
+	defer topic.Stop()
 
 	message := &pubsub.Message{
 		Data: msg,
@@ -99,9 +98,10 @@ func publish(topic *pubsub.Topic, msg []byte, wg *sync.WaitGroup) {
 
 	id, err := result.Get(ctxGet)
 	if err != nil {
-		log.Fatalf("error publishing message: %v", err)
+		log.Printf("info: error publishing message: %v", err)
+	} else {
+		fmt.Printf("Published a message with a message ID: %s to topic %s\n", id, googleTopicName)
 	}
-	fmt.Printf("Published a message with a message ID: %s\n", id)
 }
 
 func usage() {
@@ -121,4 +121,16 @@ func parseAlert(alert []byte) *parsedAlert {
 	}
 
 	return &result
+}
+
+func subjectAndRuleSlug(alert *parsedAlert) (subject string) {
+
+	subject = "falco." + alert.Priority + "." + slugify(alert.Rule)
+	subject = strings.ToLower(subject)
+
+	return subject
+}
+
+func slugify(input string) string {
+	return strings.Trim(slugRegularExpression.ReplaceAllString(strings.ToLower(input), "_"), "_")
 }
