@@ -17,4 +17,4 @@ playbook = playbooks.StartSysdigCaptureForContainer(
 
 
 def handler(event, context):
-    playbook.run(event['data'])
+    playbook.run(playbooks.falco_alert(event))

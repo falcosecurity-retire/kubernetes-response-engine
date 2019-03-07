@@ -1,5 +1,6 @@
 import json
-import maya
+import base64
+import pendulum
 
 
 class DeletePod(object):
@@ -8,7 +9,6 @@ class DeletePod(object):
 
     def run(self, alert):
         pod_name = alert['output_fields']['k8s.pod.name']
-
         self._k8s_client.delete_pod(pod_name)
 
 
@@ -40,7 +40,7 @@ class AddMessageToSlack(object):
                     },
                     {
                         'title': 'Time',
-                        'value': str(maya.parse(alert['time'])),
+                        'value': str(pendulum.parse(alert['time'])),
                         'short': True
                     },
                     {
@@ -175,7 +175,7 @@ class CreateContainerInPhantom(object):
         return {
             'description': _output_from_alert(alert),
             'name': alert['rule'],
-            'start_time': maya.parse(alert['time']).iso8601(),
+            'start_time': pendulum.parse(alert['time']).to_iso8601_string(),
             'severity': self._severity_from(alert['priority']),
             'label': 'events',
             'status': 'new',
@@ -201,8 +201,15 @@ class CreateContainerInPhantom(object):
 
 
 def falco_alert(event):
+    print(event)
     if 'data' in event:
-        return event['data']
+        data = event['data']
+        if isinstance(data, str): # Base64 maybe?
+            try:
+                data = json.loads(base64.b64decode(data))
+            except Exception as e:
+                print(e)
+        return data
 
     if 'Records' in event:
         return json.loads(event['Records'][0]['Sns']['Message'])

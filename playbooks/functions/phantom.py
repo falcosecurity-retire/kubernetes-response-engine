@@ -22,4 +22,4 @@ playbook = playbooks.CreateContainerInPhantom(
 
 
 def handler(event, context):
-    playbook.run(event['data'])
+    playbook.run(playbooks.falco_alert(event))

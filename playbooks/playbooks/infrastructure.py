@@ -9,7 +9,7 @@ import requests
 class KubernetesClient(object):
     def __init__(self):
         if 'KUBERNETES_LOAD_KUBE_CONFIG' in os.environ:
-            config.load_kube_config()
+            config.load_kube_config(persist_config=False)
         else:
             config.load_incluster_config()
 
