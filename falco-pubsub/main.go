@@ -33,7 +33,14 @@ func main() {
 
 	credentials, err := google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), storage.ScopeReadOnly)
 	if err != nil {
-		log.Fatalf("could not create credentials from json data: %v", err)
+		log.Println("error creating the credentials object, trying again in case the credentials are sent from Helm...")
+
+		// the data will be retrieved as string with quotes so it works with Helm, we need to convert it to a Json
+		googleCredentialsData = adaptFromHelm(googleCredentialsData)
+		credentials, err = google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), storage.ScopeReadOnly)
+		if err != nil {
+			log.Fatalf("could not create credentials from json data: %v", err)
+		}
 	}
 
 	log.SetFlags(0)
@@ -68,6 +75,14 @@ func main() {
 
 	wg.Wait()
 
+}
+
+func adaptFromHelm(str string) string {
+	str = strings.ReplaceAll(str, "[", "{")
+	str = strings.ReplaceAll(str, "]", "}")
+	str = strings.ReplaceAll(str, `\"`, `"`)
+	str = strings.ReplaceAll(str, `""`, `"`)
+	return str
 }
 
 func publish(pubsubClient *pubsub.Client, msg []byte, wg *sync.WaitGroup) {
