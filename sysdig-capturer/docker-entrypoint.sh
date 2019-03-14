@@ -18,3 +18,9 @@ if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ] && [ -n "$AWS_
         --secret_key=$AWS_SECRET_ACCESS_KEY \
         put /captures/$CAPTURE_FILE_NAME.scap.gz $AWS_S3_BUCKET
 fi
+
+if [ -n "$GCLOUD_BUCKET" ]; then
+
+    # The GKE Cluster must be created with the '--scopes "https://www.googleapis.com/auth/devstorage.read_write"' option
+    gsutil cp "/captures/$CAPTURE_FILE_NAME.scap.gz" "$GCLOUD_BUCKET"
+fi

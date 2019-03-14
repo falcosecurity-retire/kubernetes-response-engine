@@ -140,7 +140,7 @@ class CreateIncidentInDemisto(object):
     }
 
 
-class StartSysdigCaptureForContainer(object):
+class StartSysdigCaptureForContainerS3(object):
     def __init__(self, k8s_client, duration_in_seconds, s3_bucket,
                  aws_access_key_id, aws_secret_access_key):
         self._k8s_client = k8s_client
@@ -153,12 +153,28 @@ class StartSysdigCaptureForContainer(object):
         pod = alert['output_fields']['k8s.pod.name']
         event_time = alert['output_fields']['evt.time']
 
-        self._k8s_client.start_sysdig_capture_for(pod,
+        self._k8s_client.start_sysdig_capture_for("s3", pod,
                                                   event_time,
                                                   self._duration_in_seconds,
                                                   self._s3_bucket,
                                                   self._aws_access_key_id,
                                                   self._aws_secret_access_key)
+
+
+class StartSysdigCaptureForContainerGcloud(object):
+    def __init__(self, k8s_client, duration_in_seconds, gcloud_bucket):
+        self._k8s_client = k8s_client
+        self._duration_in_seconds = duration_in_seconds
+        self._gcloud_bucket = gcloud_bucket
+
+    def run(self, alert):
+        pod = alert['output_fields']['k8s.pod.name']
+        event_time = alert['output_fields']['evt.time']
+
+        self._k8s_client.start_sysdig_capture_for("gcloud", pod,
+                                                  event_time,
+                                                  self._duration_in_seconds,
+                                                  self._gcloud_bucket)
 
 
 class CreateContainerInPhantom(object):

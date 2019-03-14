@@ -15,8 +15,8 @@ playbooks = {path = "."}
 kubernetes = "*"
 requests = "*"
 "e1839a8" = {path = ".", editable = true}
-maya = "*"
-pyyaml = ">=4.2b1"
+pendulum = "*"
+pyyaml = ">=3.13"
 
 [requires]
 python_version = "*"

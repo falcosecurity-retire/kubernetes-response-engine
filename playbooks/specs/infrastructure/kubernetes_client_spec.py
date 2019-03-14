@@ -59,7 +59,7 @@ with description(infrastructure.KubernetesClient) as self:
     with it('starts sysdig capture for'):
         self._create_nginx_pod()
 
-        job = self.kubernetes_client.start_sysdig_capture_for('nginx',
+        job = self.kubernetes_client.start_sysdig_capture_for('s3', 'nginx',
                                                               int(time.time()),
                                                               10,
                                                               'any s3 bucket',

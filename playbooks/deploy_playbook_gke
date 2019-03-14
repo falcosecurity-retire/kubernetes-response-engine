@@ -68,16 +68,14 @@ pipenv lock --requirements | sed '/^-/ d' > requirements.txt
 directory="lambda"
 
 mkdir -p ${directory}/${playbook}
-pip install -t ${directory}/${playbook} -r requirements.txt
-pip install -t ${directory}/${playbook}  .
+cp -r playbooks ${directory}/${playbook}
 
 cp requirements.txt ${directory}/${playbook}/requirements.txt
 cp functions/"${playbook}".py ${directory}/${playbook}/main.py
 cd ${directory}/${playbook}
-# zip ../"${playbook}".zip  -r *
 KUBECONFIG="kubeconfig" gcloud container clusters get-credentials ${cluster_name} --zone ${zone} --project ${project_name}
 cd ..
-gcloud functions deploy ${playbook} --source `pwd`/${playbook} --entry-point handler --runtime python37 --trigger-topic ${topic_name} --set-env-vars=$(join , ${environment[@]})
+gcloud functions deploy ${playbook} --source `pwd`/${playbook} --entry-point handler --runtime python37 --trigger-topic ${topic_name} --set-env-vars="$(join , ${environment[@]})"
 
 cd ..
 rm -fr ${directory} requirements.txt
