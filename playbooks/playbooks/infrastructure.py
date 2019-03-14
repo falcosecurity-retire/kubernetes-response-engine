@@ -103,7 +103,7 @@ class KubernetesClient(object):
                     spec=client.V1PodSpec(
                         containers=[client.V1Container(
                             name='capturer',
-                            image='sysdig/capturer',
+                            image='sysdiglabs/capturer',
                             image_pull_policy='Always',
                             security_context=client.V1SecurityContext(
                                 privileged=True
@@ -225,7 +225,7 @@ class KubernetesClient(object):
                     spec=client.V1PodSpec(
                         containers=[client.V1Container(
                             name='capturer',
-                            image='sysdig/capturer',
+                            image='sysdiglabs/capturer',
                             image_pull_policy='Always',
                             security_context=client.V1SecurityContext(
                                 privileged=True
