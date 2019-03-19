@@ -65,7 +65,7 @@ fi
 
 pipenv lock --requirements | sed '/^-/ d' > requirements.txt
 
-directory="lambda"
+directory="google-function"
 
 mkdir -p ${directory}/${playbook}
 cp -r playbooks ${directory}/${playbook}

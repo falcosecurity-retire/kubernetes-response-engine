@@ -16,7 +16,7 @@ kubernetes = "*"
 requests = "*"
 "e1839a8" = {path = ".", editable = true}
 pendulum = "*"
-pyyaml = ">=3.13"
+pyyaml = ">=5.1"
 
 [requires]
 python_version = "*"

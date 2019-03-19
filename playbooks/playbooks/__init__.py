@@ -217,14 +217,15 @@ class CreateContainerInPhantom(object):
 
 
 def falco_alert(event):
-    print(event)
     if 'data' in event:
         data = event['data']
         if isinstance(data, str): # Base64 maybe?
             try:
                 data = json.loads(base64.b64decode(data))
+            except binascii.Error as be:
+                logging.info("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", be)
             except Exception as e:
-                print(e)
+                raise Exception("Error decoding the falco alert data: ", e)
         return data
 
     if 'Records' in event:
