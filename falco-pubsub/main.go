@@ -26,6 +26,7 @@ var (
 
 func main() {
 	var pipePath = flag.String("f", "/var/run/falco/nats", "The named pipe path")
+	var topicName = flag.String("t", "", "Topic to subscribe")
 
 	if googleProjectID == "" || googleCredentialsData == "" {
 		log.Fatalln("You need to provide the env vars GOOGLE_PROJECT_ID and GOOGLE_CREDENTIALS_DATA")
@@ -46,6 +47,10 @@ func main() {
 	log.SetFlags(0)
 	flag.Usage = usage
 	flag.Parse()
+
+	if *topicName == "" {
+		log.Fatalf("you must provide a topic name to subscribe using -t <topic_name>")
+	}
 
 	pubsubClient, err := pubsub.NewClient(context.Background(), googleProjectID, option.WithCredentials(credentials))
 	if err != nil {
@@ -70,7 +75,7 @@ func main() {
 	for scanner.Scan() {
 		msg := []byte(scanner.Text())
 		wg.Add(1)
-		go publish(pubsubClient, msg, wg)
+		go publish(pubsubClient, msg, *topicName, wg)
 	}
 
 	wg.Wait()
@@ -85,14 +90,14 @@ func adaptFromHelm(str string) string {
 	return str
 }
 
-func publish(pubsubClient *pubsub.Client, msg []byte, wg *sync.WaitGroup) {
+func publish(pubsubClient *pubsub.Client, msg []byte, topicName string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	alert := parseAlert(msg)
 
-	googleTopicName := subjectAndRuleSlug(alert)
+	// googleTopicName := subjectAndRuleSlug(alert)
 
-	topic := pubsubClient.Topic(googleTopicName)
+	topic := pubsubClient.Topic(topicName)
 	defer topic.Stop()
 
 	message := &pubsub.Message{
@@ -115,7 +120,7 @@ func publish(pubsubClient *pubsub.Client, msg []byte, wg *sync.WaitGroup) {
 	if err != nil {
 		log.Printf("info: error publishing message: %v", err)
 	} else {
-		fmt.Printf("Published a message with a message ID: %s to topic %s\n", id, googleTopicName)
+		fmt.Printf("Published a message with a message ID: %s to topic %s\n", id, topicName)
 	}
 }
 
@@ -128,17 +133,18 @@ type parsedAlert struct {
 	Rule     string `json:"rule"`
 }
 
-func parseAlert(alert []byte) *parsedAlert {
+func parseAlert(alert []byte) parsedAlert {
 	var result parsedAlert
 	err := json.Unmarshal(alert, &result)
 	if err != nil {
 		log.Fatal(err)
 	}
+	result.Rule = subjectAndRuleSlug(result)
 
-	return &result
+	return result
 }
 
-func subjectAndRuleSlug(alert *parsedAlert) (subject string) {
+func subjectAndRuleSlug(alert parsedAlert) (subject string) {
 
 	subject = "falco." + alert.Priority + "." + slugify(alert.Rule)
 	subject = strings.ToLower(subject)

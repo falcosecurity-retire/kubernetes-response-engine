@@ -223,7 +223,9 @@ def falco_alert(event):
             try:
                 data = json.loads(base64.b64decode(data))
             except binascii.Error as be:
-                logging.info("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", be)
+                logging.error("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", be)
+            except TypeError as te:
+                logging.error("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", te)
             except Exception as e:
                 raise Exception("Error decoding the falco alert data: ", e)
         return data
