@@ -75,7 +75,7 @@ cp functions/"${playbook}".py ${directory}/${playbook}/main.py
 cd ${directory}/${playbook}
 KUBECONFIG="kubeconfig" gcloud container clusters get-credentials ${cluster_name} --zone ${zone} --project ${project_name}
 cd ..
-gcloud functions deploy ${playbook} --source `pwd`/${playbook} --entry-point handler --runtime python37 --trigger-topic ${topic_name} --set-env-vars="$(join , ${environment[@]})"
+gcloud functions deploy ${playbook} --project ${project_name} --source `pwd`/${playbook} --entry-point handler --runtime python37 --trigger-topic ${topic_name} --set-env-vars="$(join , ${environment[@]})"
 
 cd ..
 rm -fr ${directory} requirements.txt
