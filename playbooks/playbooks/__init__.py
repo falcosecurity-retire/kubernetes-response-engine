@@ -1,6 +1,9 @@
 import json
 import base64
 import pendulum
+import logging
+import os
+import binascii
 
 
 class DeletePod(object):
@@ -25,7 +28,7 @@ class AddMessageToSlack(object):
     def _build_slack_message(self, alert):
         return {
             'text': _output_from_alert(alert),
-            'attachments':  [{
+            'attachments': [{
                 'color': self._color_from(alert['priority']),
                 'fields': [
                     {
@@ -217,9 +220,17 @@ class CreateContainerInPhantom(object):
 
 
 def falco_alert(event):
+    rules_to_listen = [rule.lower() for rule in os.getenv("LISTEN_RULES", "").split(',')]
+
+    if 'attributes' in event and 'rule' in event['attributes']:
+        rule = event['attributes']['rule'].lower()
+        if rule not in rules_to_listen:
+            logging.debug(f"ignored rule {rule} as it is not in the list of rules to listen: {rules_to_listen}")
+            return False
+
     if 'data' in event:
         data = event['data']
-        if isinstance(data, str): # Base64 maybe?
+        if isinstance(data, str):  # Base64 maybe?
             try:
                 data = json.loads(base64.b64decode(data))
             except binascii.Error as be:
@@ -228,6 +239,7 @@ def falco_alert(event):
                 logging.error("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", te)
             except Exception as e:
                 raise Exception("Error decoding the falco alert data: ", e)
+
         return data
 
     if 'Records' in event:
