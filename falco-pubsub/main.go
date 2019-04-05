@@ -28,6 +28,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -49,10 +50,8 @@ func main() {
 
 	credentials, err := google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), storage.ScopeReadOnly)
 	if err != nil {
-		log.Println("error creating the credentials object, trying again in case the credentials are sent from Helm...")
-
-		// the data will be retrieved as string with quotes so it works with Helm, we need to convert it to a Json
-		googleCredentialsData = adaptFromHelm(googleCredentialsData)
+		log.Println("error creating the credentials object, trying again in case the credentials are double quoted...")
+		googleCredentialsData, _ = strconv.Unquote(googleCredentialsData)
 		credentials, err = google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), storage.ScopeReadOnly)
 		if err != nil {
 			log.Fatalf("could not create credentials from json data: %v", err)
@@ -95,14 +94,6 @@ func main() {
 
 	wg.Wait()
 
-}
-
-func adaptFromHelm(str string) string {
-	str = strings.Replace(str, "[", "{", -1)
-	str = strings.Replace(str, "]", "}", -1)
-	str = strings.Replace(str, `\"`, `"`, -1)
-	str = strings.Replace(str, `""`, `"`, -1)
-	return str
 }
 
 func publish(pubsubClient *pubsub.Client, msg []byte, topicName string, wg *sync.WaitGroup) {
