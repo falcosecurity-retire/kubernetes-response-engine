@@ -4,6 +4,8 @@ import pendulum
 import logging
 import os
 import binascii
+import re
+import fnmatch
 
 
 class DeletePod(object):
@@ -219,13 +221,22 @@ class CreateContainerInPhantom(object):
     }
 
 
-def falco_alert(event):
-    rules_to_listen = [rule.lower() for rule in os.getenv("LISTEN_RULES", "").split(',')]
+rules_to_listen = [re.compile(fnmatch.translate(rule.strip())) for rule in os.getenv("LISTEN_RULES", "").split(',')]
 
+
+def matches_any_rule(rule):
+    for compiled_rule in rules_to_listen:
+        if compiled_rule.fullmatch(rule):
+            return True
+    return False
+
+
+def falco_alert(event):
     if 'attributes' in event and 'rule' in event['attributes']:
-        rule = event['attributes']['rule'].lower()
-        if rule not in rules_to_listen:
-            logging.debug(f"ignored rule {rule} as it is not in the list of rules to listen: {rules_to_listen}")
+        rule = event['attributes']['rule']
+        if not matches_any_rule(rule):
+            logging.debug(
+                f"ignored rule {rule} as it is not in the list of rules to listen {os.getenv('LISTEN_RULES', '')}")
             return False
 
     if 'data' in event:

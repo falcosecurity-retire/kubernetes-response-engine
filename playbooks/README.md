@@ -26,7 +26,7 @@ the reaction and its dependencies, uploads to Kubernetes and creates the kubeles
 trigger.
 
 ```
-./deploy_playbook -p slack -e SLACK_WEBHOOK_URL="https://..." -t "falco.error.*" -t "falco.info.*"
+./deploy_playbook -p slack -t topic_name -e SLACK_WEBHOOK_URL="https://..." -e LISTEN_RULES="falco.error.*,falco.info.*"
 ```
 
 ### Parameters
@@ -36,12 +36,13 @@ trigger.
     functions.
 
 * -e: Sets configuration settings for Playbook. In this case the URL where we
-    have to post messages. You can specify multiple *-e* flags.
+    have to post messages. You can specify multiple *-e* flags. You need to
+    specify the `LISTEN_RULES` env var. In this case, playbook will be run when a
+    falco.error or falco.info alert is raised.
 
 * -t: Topic to susbcribe. You can specify multiple *-t* flags and a trigger
     will be created for each topic, so when we receive a message in that topic,
-    our function will be ran. In this case, playbook will be run when a
-    falco.error or falco.info alert is raised.
+    our function will be ran.
 
 ### Kubeless 101
 
@@ -108,12 +109,15 @@ but the *spec/reactions* can be run without any kind of infrastructure.
 
 ## Available Playbooks
 
+*Important*: All the playbooks need to be subscribed to specific Falco alerts.
+To do this you need to specify the environment variable `LISTEN_RULES`.
+
 ### Delete a Pod
 
 This playbook kills a pod using Kubernetes API
 
 ```
-./deploy_playbook -p delete -t "falco.notice.terminal_shell_in_container"
+./deploy_playbook -p delete -t topic_name -e LISTEN_RULES="falco.notice.terminal_shell_in_container"
 ```
 
 In this example, everytime we receive a *Terminal shell in container* alert from
@@ -124,7 +128,7 @@ Falco, that pod will be deleted.
 This playbook posts a message to Slack
 
 ```
-./deploy_playbook -p slack -t "falco.error.*" -e SLACK_WEBHOOK_URL="https://..."
+./deploy_playbook -p slack -t topic_name -e LISTEN_RULES="falco.error.*" -e SLACK_WEBHOOK_URL="https://..."
 ```
 
 #### Parameters
@@ -138,7 +142,7 @@ In this example, when Falco raises an error we will be notified in Slack
 This playbook taints the node which where pod is running.
 
 ```
-$ ./deploy_playbook -p taint -t “falco.notice.contact_k8s_api_server_from_container”
+$ ./deploy_playbook -p taint -t topic_name -e LISTEN_RULES=“falco.notice.contact_k8s_api_server_from_container”
 ```
 
 #### Parameters:
@@ -157,7 +161,7 @@ be used with Calico or other similar projects for managing networking in
 Kubernetes.
 
 ```
-./deploy_playbook -p isolate -t “falco.notice.write_below_binary_dir” -t “falco.error.write_below_etc”
+./deploy_playbook -p isolate -t topic_name -e LISTEN_RULES="falco.notice.write_below_binary_dir,falco.error.write_below_etc"
 ```
 
 So as soon as we notice someone wrote under /bin (and additional binaries) or
@@ -168,7 +172,7 @@ So as soon as we notice someone wrote under /bin (and additional binaries) or
 This playbook creates an incident in Demisto
 
 ```
-./deploy_playbook -p demisto -t "falco.*.*" -e DEMISTO_API_KEY=XxXxxXxxXXXx -e DEMISTO_BASE_URL=https://..."
+./deploy_playbook -p demisto -t topic_name -e LISTEN_RULES="falco.*.*" -e DEMISTO_API_KEY=XxXxxXxxXXXx -e DEMISTO_BASE_URL=https://..."
 ```
 
 #### Parameters
@@ -185,7 +189,13 @@ This playbook starts to capture information about pod using sysdig and uploads
 to a s3 bucket.
 
 ```
-$ ./deploy_playbook -p capture -e CAPTURE_DURATION=300 -e AWS_S3_BUCKET=s3://xxxxxxx -e AWS_ACCESS_KEY_ID=xxxxXXXxxXXxXX -e AWS_SECRET_ACCESS_KEY=xxXxXXxxxxXXX -t "falco.notice.terminal_shell_in_container"
+$ ./deploy_playbook -p capture \
+    -e CAPTURE_DURATION=300 \
+    -e AWS_S3_BUCKET=s3://xxxxxxx \
+    -e AWS_ACCESS_KEY_ID=xxxxXXXxxXXxXX \
+    -e AWS_SECRET_ACCESS_KEY=xxXxXXxxxxXXX \
+    -t topic_name
+    -e LISTEN_RULES="falco.notice.terminal_shell_in_container"
 ```
 
 #### Parameters:
@@ -204,7 +214,12 @@ a Kubeless function.
 This playbook creates a container in Phantom
 
 ```
-./deploy_playbook -p phantom -t "falco.*.*" -e PHANTOM_USER=user -e PHANTOM_PASSWORD=xxxXxxxX -e PHANTOM_BASE_URL=https://..."
+./deploy_playbook -p phantom \
+    -t topic_name \
+    -e LISTEN_RULES="falco.*.*" \
+    -e PHANTOM_USER=user \
+    -e PHANTOM_PASSWORD=xxxXxxxX \
+    -e PHANTOM_BASE_URL=https://..."
 ```
 
 #### Parameters
@@ -226,3 +241,22 @@ You can deploy functions to AWS Lambda using the `./deploy_playbook_aws` script.
 * -e: Sets configuration settings for Playbook. You can specify multiple *-e* flags.
 
 * -k: EKS cluster name against playbook is going to connect via K8s API.
+
+## Deploying playbooks to Google Cloud Functions
+
+You can deploy functions to Google Cloud using the `./deploy_playbook_gke` script.
+
+### Parameters
+
+* `-p`: Playbook to deploy, it must match with the top-level script.
+
+* `-e`: Sets configuration settings for Playbook. You can specify multiple *-e* flags.
+
+* `-t`: Google Pub/Sub topic to subscribe the function.
+
+* `-k`: Name of the GKE cluster.
+
+* `-z`: Name of the zone where the GKE cluster is deployed.
+
+* `-n`: Name of the GKE project where the cluster is deployed.
+
