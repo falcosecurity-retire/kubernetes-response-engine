@@ -18,7 +18,6 @@ package main
 import (
 	"bufio"
 	"cloud.google.com/go/pubsub"
-	"cloud.google.com/go/storage"
 	"context"
 	"encoding/json"
 	"flag"
@@ -48,11 +47,11 @@ func main() {
 		log.Fatalln("You need to provide the env vars GOOGLE_PROJECT_ID and GOOGLE_CREDENTIALS_DATA")
 	}
 
-	credentials, err := google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), storage.ScopeReadOnly)
+	credentials, err := google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), pubsub.ScopePubSub)
 	if err != nil {
 		log.Println("error creating the credentials object, trying again in case the credentials are double quoted...")
 		googleCredentialsData, _ = strconv.Unquote(googleCredentialsData)
-		credentials, err = google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), storage.ScopeReadOnly)
+		credentials, err = google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), pubsub.ScopePubSub)
 		if err != nil {
 			log.Fatalf("could not create credentials from json data: %v", err)
 		}
