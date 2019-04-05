@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# Deploys a playbook
+
+set -e
+
+function usage() {
+  cat<<EOF
+Usage: $0 -p PLAYBOOK -t TOPIC_NAME -k CLUSTER_NAME -z ZONE_NAME -n PROJECT_NAME [-e ENV_VAR...]
+
+-p playbook             Playbook to be deployed. Is the script for Kubeless: slack, taint, isolate.
+-e environment          Environment variables for the Kubeless function.  You can pass multiple environment variables passing several -e parameters.
+-t topic_name           Topic to subscribe
+-k k8s_cluster_name     Name of the GKE cluster
+-z k8s_zone_name        Name of the zone where the GKE cluster is deployed
+-n k8s_project_name     Name of the GKE project
+
+You must pass at least the playbook, one topic to subscribe, the cluster name, the zone name and the project name.
+
+Example:
+
+deploy_playbook_gke -p slack -e SLACK_WEBHOOK_URL=http://foobar.com/... -t falco.warning.terminal_shell_in_container -k sysdig_eks -z us-central1-a -n project-name
+EOF
+  exit 1
+}
+
+function join { local IFS="$1"; shift; echo "$*"; }
+
+playbook=""
+environment=("KUBECONFIG=kubeconfig" "KUBERNETES_LOAD_KUBE_CONFIG=1")
+topic_name="${TOPIC_NAME}"
+cluster_name=""
+zone=""
+project_name=""
+
+while getopts "p:e:t:k:z:n:" arg; do
+  case $arg in
+    p)
+      playbook="${OPTARG}"
+      ;;
+    e)
+      environment+=("${OPTARG}")
+      ;;
+    t)
+      topic_name="${OPTARG}"
+      ;;
+    k)
+      cluster_name="${OPTARG}"
+      ;;
+    z)
+      zone="${OPTARG}"
+      ;;
+    n)
+      project_name="${OPTARG}"
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
+
+if [[ "${playbook}" == "" ]] || [[ "${topic_name}" == "" || "${cluster_name}" == "" ||  "${zone}" == "" || "${project_name}" == "" ]]; then
+  usage
+fi
+
+pipenv lock --requirements | sed '/^-/ d' > requirements.txt
+
+directory="google-function"
+
+mkdir -p ${directory}/${playbook}
+cp -r playbooks ${directory}/${playbook}
+
+cp requirements.txt ${directory}/${playbook}/requirements.txt
+cp functions/"${playbook}".py ${directory}/${playbook}/main.py
+cd ${directory}/${playbook}
+KUBECONFIG="kubeconfig" gcloud container clusters get-credentials ${cluster_name} --zone ${zone} --project ${project_name}
+cd ..
+gcloud functions deploy ${playbook} --project ${project_name} --source `pwd`/${playbook} --entry-point handler --runtime python37 --trigger-topic ${topic_name} --set-env-vars="$(join , ${environment[@]})"
+
+cd ..
+rm -fr ${directory} requirements.txt

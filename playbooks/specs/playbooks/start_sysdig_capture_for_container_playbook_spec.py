@@ -8,18 +8,18 @@ from playbooks import infrastructure
 import playbooks
 
 
-with description(playbooks.StartSysdigCaptureForContainer) as self:
+with description(playbooks.StartSysdigCaptureForContainerS3) as self:
     with before.each:
         self.k8s_client = Spy(infrastructure.KubernetesClient)
         self.duration_in_seconds = 'any duration in seconds'
         self.s3_bucket = 'any s3 bucket url'
         self.aws_access_key_id = 'any aws access key id'
         self.aws_secret_access_key = 'any aws secret access key'
-        self.playbook = playbooks.StartSysdigCaptureForContainer(self.k8s_client,
-                                                                 self.duration_in_seconds,
-                                                                 self.s3_bucket,
-                                                                 self.aws_access_key_id,
-                                                                 self.aws_secret_access_key)
+        self.playbook = playbooks.StartSysdigCaptureForContainerS3(self.k8s_client,
+                                                                   self.duration_in_seconds,
+                                                                   self.s3_bucket,
+                                                                   self.aws_access_key_id,
+                                                                   self.aws_secret_access_key)
 
     with it('add starts capturing job in same node than Pod alerted'):
         pod_name = 'any pod name'
@@ -32,9 +32,33 @@ with description(playbooks.StartSysdigCaptureForContainer) as self:
         self.playbook.run(alert)
 
         expect(self.k8s_client.start_sysdig_capture_for)\
-            .to(have_been_called_with(pod_name,
+            .to(have_been_called_with('s3', pod_name,
                                       event_time,
                                       self.duration_in_seconds,
                                       self.s3_bucket,
                                       self.aws_access_key_id,
                                       self.aws_secret_access_key))
+
+with description(playbooks.StartSysdigCaptureForContainerGcloud) as self:
+    with before.each:
+        self.k8s_client = Spy(infrastructure.KubernetesClient)
+        self.duration_in_seconds = 'any duration in seconds'
+        self.gcloud_bucket = 'any gcloud bucket'
+        self.playbook = playbooks.StartSysdigCaptureForContainerGcloud(self.k8s_client,
+                                                                       self.duration_in_seconds,
+                                                                       self.gcloud_bucket)
+
+    with it('add starts capturing job in same node than Pod alerted'):
+        pod_name = 'any pod name'
+        event_time = 'any event time'
+        alert = {'output_fields': {
+            'k8s.pod.name': pod_name,
+            'evt.time': event_time,
+        }}
+
+        self.playbook.run(alert)
+        expect(self.k8s_client.start_sysdig_capture_for)\
+            .to(have_been_called_with("gcloud", pod_name,
+                                                  event_time,
+                                                  self.duration_in_seconds,
+                                                  self.gcloud_bucket))

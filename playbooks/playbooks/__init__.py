@@ -1,5 +1,11 @@
 import json
-import maya
+import base64
+import pendulum
+import logging
+import os
+import binascii
+import re
+import fnmatch
 
 
 class DeletePod(object):
@@ -8,7 +14,6 @@ class DeletePod(object):
 
     def run(self, alert):
         pod_name = alert['output_fields']['k8s.pod.name']
-
         self._k8s_client.delete_pod(pod_name)
 
 
@@ -25,7 +30,7 @@ class AddMessageToSlack(object):
     def _build_slack_message(self, alert):
         return {
             'text': _output_from_alert(alert),
-            'attachments':  [{
+            'attachments': [{
                 'color': self._color_from(alert['priority']),
                 'fields': [
                     {
@@ -40,7 +45,7 @@ class AddMessageToSlack(object):
                     },
                     {
                         'title': 'Time',
-                        'value': str(maya.parse(alert['time'])),
+                        'value': str(pendulum.parse(alert['time'])),
                         'short': True
                     },
                     {
@@ -140,7 +145,7 @@ class CreateIncidentInDemisto(object):
     }
 
 
-class StartSysdigCaptureForContainer(object):
+class StartSysdigCaptureForContainerS3(object):
     def __init__(self, k8s_client, duration_in_seconds, s3_bucket,
                  aws_access_key_id, aws_secret_access_key):
         self._k8s_client = k8s_client
@@ -153,12 +158,28 @@ class StartSysdigCaptureForContainer(object):
         pod = alert['output_fields']['k8s.pod.name']
         event_time = alert['output_fields']['evt.time']
 
-        self._k8s_client.start_sysdig_capture_for(pod,
+        self._k8s_client.start_sysdig_capture_for("s3", pod,
                                                   event_time,
                                                   self._duration_in_seconds,
                                                   self._s3_bucket,
                                                   self._aws_access_key_id,
                                                   self._aws_secret_access_key)
+
+
+class StartSysdigCaptureForContainerGcloud(object):
+    def __init__(self, k8s_client, duration_in_seconds, gcloud_bucket):
+        self._k8s_client = k8s_client
+        self._duration_in_seconds = duration_in_seconds
+        self._gcloud_bucket = gcloud_bucket
+
+    def run(self, alert):
+        pod = alert['output_fields']['k8s.pod.name']
+        event_time = alert['output_fields']['evt.time']
+
+        self._k8s_client.start_sysdig_capture_for("gcloud", pod,
+                                                  event_time,
+                                                  self._duration_in_seconds,
+                                                  self._gcloud_bucket)
 
 
 class CreateContainerInPhantom(object):
@@ -175,7 +196,7 @@ class CreateContainerInPhantom(object):
         return {
             'description': _output_from_alert(alert),
             'name': alert['rule'],
-            'start_time': maya.parse(alert['time']).iso8601(),
+            'start_time': pendulum.parse(alert['time']).to_iso8601_string(),
             'severity': self._severity_from(alert['priority']),
             'label': 'events',
             'status': 'new',
@@ -200,9 +221,37 @@ class CreateContainerInPhantom(object):
     }
 
 
+rules_to_listen = [re.compile(fnmatch.translate(rule.strip())) for rule in os.getenv("LISTEN_RULES", "").split(',')]
+
+
+def matches_any_rule(rule):
+    for compiled_rule in rules_to_listen:
+        if compiled_rule.fullmatch(rule):
+            return True
+    return False
+
+
 def falco_alert(event):
+    if 'attributes' in event and 'rule' in event['attributes']:
+        rule = event['attributes']['rule']
+        if not matches_any_rule(rule):
+            logging.debug(
+                f"ignored rule {rule} as it is not in the list of rules to listen {os.getenv('LISTEN_RULES', '')}")
+            return False
+
     if 'data' in event:
-        return event['data']
+        data = event['data']
+        if isinstance(data, str):  # Base64 maybe?
+            try:
+                data = json.loads(base64.b64decode(data))
+            except binascii.Error as be:
+                logging.error("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", be)
+            except TypeError as te:
+                logging.error("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", te)
+            except Exception as e:
+                raise Exception("Error decoding the falco alert data: ", e)
+
+        return data
 
     if 'Records' in event:
         return json.loads(event['Records'][0]['Sns']['Message'])

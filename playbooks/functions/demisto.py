@@ -19,4 +19,6 @@ playbook = playbooks.CreateIncidentInDemisto(
 
 
 def handler(event, context):
-    playbook.run(event['data'])
+    alert = playbooks.falco_alert(event)
+    if alert:
+        playbook.run(alert)
