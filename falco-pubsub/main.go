@@ -98,10 +98,10 @@ func main() {
 }
 
 func adaptFromHelm(str string) string {
-	str = strings.ReplaceAll(str, "[", "{")
-	str = strings.ReplaceAll(str, "]", "}")
-	str = strings.ReplaceAll(str, `\"`, `"`)
-	str = strings.ReplaceAll(str, `""`, `"`)
+	str = strings.Replace(str, "[", "{", -1)
+	str = strings.Replace(str, "]", "}", -1)
+	str = strings.Replace(str, `\"`, `"`, -1)
+	str = strings.Replace(str, `""`, `"`, -1)
 	return str
 }
 
