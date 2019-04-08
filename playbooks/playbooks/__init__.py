@@ -1,3 +1,5 @@
+from playbooks.alert_subscriber import AlertSubscriber
+
 import json
 import base64
 import pendulum
