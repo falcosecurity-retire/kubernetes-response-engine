@@ -53,7 +53,7 @@ with description(playbooks.AddMessageToSlack) as self:
             expect(self.message['attachments'][0]['fields']).to(contain(have_keys(title='Rule', value='Non sudo setuid')))
 
         with it('includes time when alert happened'):
-            expect(self.message['attachments'][0]['fields']).to(contain(have_keys(title='Time', value='Thu, 24 May 2018 10:22:15 GMT')))
+            expect(self.message['attachments'][0]['fields']).to(contain(have_keys(title='Time', value='Thu, 24 May 18 10:22:15 +0000')))
 
         with it('includes kubernetes pod name'):
             expect(self.message['attachments'][0]['fields']).to(contain(have_keys(title='Kubernetes Pod Name', value='falco-event-generator-6fd89678f9-cdkvz')))

@@ -47,7 +47,7 @@ with description(playbooks.CreateContainerInPhantom) as self:
         expect(self.container).to(have_key('name', 'Non sudo setuid'))
 
     with it('includes time when alert happened'):
-        expect(self.container).to(have_key('start_time', '2018-05-24T10:22:15.576767Z'))
+        expect(self.container).to(have_key('start_time', '2018-05-24T10:22:15.576767+00:00'))
 
     with it('includes label'):
         expect(self.container).to(have_key('label', 'events'))

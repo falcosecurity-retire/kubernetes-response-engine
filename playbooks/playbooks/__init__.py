@@ -45,7 +45,7 @@ class AddMessageToSlack(object):
                     },
                     {
                         'title': 'Time',
-                        'value': str(pendulum.parse(alert['time'])),
+                        'value': pendulum.parse(alert['time']).to_rfc822_string(),
                         'short': True
                     },
                     {
@@ -196,7 +196,7 @@ class CreateContainerInPhantom(object):
         return {
             'description': _output_from_alert(alert),
             'name': alert['rule'],
-            'start_time': pendulum.parse(alert['time']).to_iso8601_string(),
+            'start_time': pendulum.parse(alert['time']).isoformat(),
             'severity': self._severity_from(alert['priority']),
             'label': 'events',
             'status': 'new',
