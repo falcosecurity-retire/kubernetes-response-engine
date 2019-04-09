@@ -1,13 +1,6 @@
 from playbooks.alert_subscriber import AlertSubscriber
 
-import json
-import base64
 import pendulum
-import logging
-import os
-import binascii
-import re
-import fnmatch
 
 
 class DeletePod(object):
@@ -221,41 +214,3 @@ class CreateContainerInPhantom(object):
         'Informational': 'low',
         'Debug': 'low',
     }
-
-
-rules_to_listen = [re.compile(fnmatch.translate(rule.strip())) for rule in os.getenv("LISTEN_RULES", "").split(',')]
-
-
-def matches_any_rule(rule):
-    for compiled_rule in rules_to_listen:
-        if compiled_rule.fullmatch(rule):
-            return True
-    return False
-
-
-def falco_alert(event):
-    if 'attributes' in event and 'rule' in event['attributes']:
-        rule = event['attributes']['rule']
-        if not matches_any_rule(rule):
-            logging.debug(
-                f"ignored rule {rule} as it is not in the list of rules to listen {os.getenv('LISTEN_RULES', '')}")
-            return False
-
-    if 'data' in event:
-        data = event['data']
-        if isinstance(data, str):  # Base64 maybe?
-            try:
-                data = json.loads(base64.b64decode(data))
-            except binascii.Error as be:
-                logging.error("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", be)
-            except TypeError as te:
-                logging.error("Error while decoding the falco alert data, maybe it's not a Base64 message? %s", te)
-            except Exception as e:
-                raise Exception("Error decoding the falco alert data: ", e)
-
-        return data
-
-    if 'Records' in event:
-        return json.loads(event['Records'][0]['Sns']['Message'])
-
-    return event

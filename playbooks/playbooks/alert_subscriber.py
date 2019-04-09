@@ -1,3 +1,4 @@
+import os
 import re
 import fnmatch
 import json
@@ -62,3 +63,10 @@ class AlertSubscriber(object):
             return True
         except Exception:
             return False
+
+    @classmethod
+    def create_from_environment_variables(class_, playbook):
+        return class_(
+            playbook,
+            channels=os.environ.get('LISTEN_RULES', "").split(',')
+        )

@@ -2,11 +2,10 @@ import playbooks
 from playbooks import infrastructure
 
 
-playbook = playbooks.DeletePod(
-    infrastructure.KubernetesClient()
+subscriber = playbooks.AlertSubscriber.create_from_environment_variables(
+    playbooks.DeletePod(infrastructure.KubernetesClient())
 )
 
+
 def handler(event, context):
-    alert = playbooks.falco_alert(event)
-    if alert:
-        playbook.run(alert)
+    subscriber.receive(event)
