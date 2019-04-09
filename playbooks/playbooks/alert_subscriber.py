@@ -68,5 +68,5 @@ class AlertSubscriber(object):
     def create_from_environment_variables(class_, playbook):
         return class_(
             playbook,
-            channels=os.environ.get('LISTEN_RULES', "").split(',')
+            channels=os.environ.get('SUBSCRIBED_ALERTS', '').split(',')
         )

@@ -8,15 +8,15 @@ function usage() {
   cat<<EOF
 Usage: $0 [options]
 
--p playbook     Playbook to be deployed. Is the script for Kubeless: slack, taint, isolate.
--e environment  Environment variables for the Kubeless function.  You can pass multiple environment variables passing several -e parameters.
--t topic        NATS topic to subscribe function. You can bind to multiple topics passing several -t parameters.
+-p playbook       Playbook to be deployed. Is the script for Kubeless: slack, taint, isolate.
+-e environment    Environment variables for the Kubeless function.  You can pass multiple environment variables passing several -e parameters.
+-s subscription   Falco alert subscription. You can bind to multiple alerts passing several -s parameters.
 
-You must pass the playbook and at least one topic to subscribe.
+You must pass the playbook and at least one falco alert to subscribe.
 
 Example:
 
-deploy_playbook -p slack -t "falco.error.*" -e SLACK_WEBHOOK_URL=http://foobar.com/...
+deploy_playbook -p slack -s "falco.error.*" -e SLACK_WEBHOOK_URL=http://foobar.com/...
 EOF
   exit 1
 }
@@ -29,9 +29,9 @@ function create_environment_flags {
 
 playbook=""
 environment=()
-topics=()
+subscriptions=()
 
-while getopts "p:e:t:" arg; do
+while getopts "p:e:s:" arg; do
   case $arg in
     p)
       playbook="${OPTARG}"
@@ -39,8 +39,8 @@ while getopts "p:e:t:" arg; do
     e)
       environment+=("${OPTARG}")
       ;;
-    t)
-      topics+=("${OPTARG}")
+    s)
+      subscriptions+=("${OPTARG}")
       ;;
     *)
       usage
@@ -48,7 +48,7 @@ while getopts "p:e:t:" arg; do
   esac
 done
 
-if [[ "${playbook}" == "" || ${#topics[@]} -eq 0 ]]; then
+if [[ "${playbook}" == "" || ${#subscriptions[@]} -eq 0 ]]; then
   usage
 fi
 
@@ -80,8 +80,8 @@ kubeless function deploy  --from-file "${playbook}".zip \
 
 rm -fr requirements.txt ${playbook}.zip kubeless-function
 
-for index in ${!topics[*]}; do
+for index in ${!subscriptions[*]}; do
   kubeless trigger nats create falco-"${playbook}"-trigger-"${index}" \
       --function-selector created-by=kubeless,function=falco-${playbook} \
-      --trigger-topic "${topics[$index]}"
+      --trigger-topic "${subscriptions[$index]}"
 done
