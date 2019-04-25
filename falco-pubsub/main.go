@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"cloud.google.com/go/pubsub"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -45,6 +46,12 @@ func main() {
 
 	if googleProjectID == "" || googleCredentialsData == "" {
 		log.Fatalln("You need to provide the env vars GOOGLE_PROJECT_ID and GOOGLE_CREDENTIALS_DATA")
+	}
+
+	base64decodedCredentials, err := base64.StdEncoding.DecodeString(googleCredentialsData)
+	if err == nil {
+		log.Println("credentials are encoded using base64, decoding them before using")
+		googleCredentialsData = string(base64decodedCredentials)
 	}
 
 	credentials, err := google.CredentialsFromJSON(context.Background(), []byte(googleCredentialsData), pubsub.ScopePubSub)
