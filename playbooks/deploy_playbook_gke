@@ -10,7 +10,7 @@ Usage: $0 -p PLAYBOOK -t TOPIC_NAME -s SUBSCRIPTION_TO_ALERT -k CLUSTER_NAME -z 
 
 -p playbook             Playbook to be deployed. Is the script for Kubeless: slack, taint, isolate.
 -e environment          Environment variables for the Kubeless function.  You can pass multiple environment variables passing several -e parameters.
--t topic_name           Topic to subscribe
+-t topic_name           Google Pub/Sub topic name to subscribe
 -s subscription         Falco alert subscription. You can bind to multiple alerts passing several -s parameters.
 -k k8s_cluster_name     Name of the GKE cluster
 -z k8s_zone_name        Name of the zone where the GKE cluster is deployed

@@ -41,10 +41,6 @@ trigger.
 * -s: Subscribes to those falco alerts. You can specify multiple and use wildcards.
     In this case, playbook will be run when a falco.error or falco.info alert is raised.
 
-* -t: Topic to susbcribe. You can specify multiple *-t* flags and a trigger
-    will be created for each topic, so when we receive a message in that topic,
-    our function will be ran.
-
 ### Kubeless 101
 
 Under the hood, there are several useful commands for checking function state with kubeless.
@@ -120,7 +116,7 @@ run if you forget the `-s` parameter.
 This playbook kills a pod using Kubernetes API
 
 ```
-./deploy_playbook -p delete -t topic_name -s falco.notice.terminal_shell_in_container
+./deploy_playbook -p delete -s falco.notice.terminal_shell_in_container
 ```
 
 In this example, everytime we receive a *Terminal shell in container* alert from
@@ -131,7 +127,7 @@ Falco, that pod will be deleted.
 This playbook posts a message to Slack
 
 ```
-./deploy_playbook -p slack -t topic_name -s "falco.error.*" -e SLACK_WEBHOOK_URL="https://..."
+./deploy_playbook -p slack -s "falco.error.*" -e SLACK_WEBHOOK_URL="https://..."
 ```
 
 #### Parameters
@@ -145,7 +141,7 @@ In this example, when Falco raises an error we will be notified in Slack
 This playbook taints the node which where pod is running.
 
 ```
-$ ./deploy_playbook -p taint -t topic_name -s falco.notice.contact_k8s_api_server_from_container
+$ ./deploy_playbook -p taint -s falco.notice.contact_k8s_api_server_from_container
 ```
 
 #### Parameters:
@@ -164,7 +160,7 @@ be used with Calico or other similar projects for managing networking in
 Kubernetes.
 
 ```
-./deploy_playbook -p isolate -t topic_name -s falco.notice.write_below_binary_dir -s falco.error.write_below_etc
+./deploy_playbook -p isolate -s falco.notice.write_below_binary_dir -s falco.error.write_below_etc
 ```
 
 So as soon as we notice someone wrote under /bin (and additional binaries) or
@@ -175,7 +171,7 @@ So as soon as we notice someone wrote under /bin (and additional binaries) or
 This playbook creates an incident in Demisto
 
 ```
-./deploy_playbook -p demisto -t topic_name -s "falco.*.*" -e DEMISTO_API_KEY=XxXxxXxxXXXx -e DEMISTO_BASE_URL=https://..."
+./deploy_playbook -p demisto -s "falco.*.*" -e DEMISTO_API_KEY=XxXxxXxxXXXx -e DEMISTO_BASE_URL=https://..."
 ```
 
 #### Parameters
@@ -197,7 +193,6 @@ $ ./deploy_playbook -p capture \
     -e AWS_S3_BUCKET=s3://xxxxxxx \
     -e AWS_ACCESS_KEY_ID=xxxxXXXxxXXxXX \
     -e AWS_SECRET_ACCESS_KEY=xxXxXXxxxxXXX \
-    -t topic_name
     -s falco.notice.terminal_shell_in_container
 ```
 
@@ -218,7 +213,6 @@ This playbook creates a container in Phantom
 
 ```
 ./deploy_playbook -p phantom \
-    -t topic_name \
     -s "falco.*.*" \
     -e PHANTOM_USER=user \
     -e PHANTOM_PASSWORD=xxxXxxxX \
@@ -264,4 +258,3 @@ You can deploy functions to Google Cloud using the `./deploy_playbook_gke` scrip
 * `-z`: Name of the zone where the GKE cluster is deployed.
 
 * `-n`: Name of the GKE project where the cluster is deployed.
-
