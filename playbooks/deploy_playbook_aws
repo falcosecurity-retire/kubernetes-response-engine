@@ -55,7 +55,7 @@ pip install -t lambda -r requirements.txt
 pip install -t lambda  .
 
 aws eks update-kubeconfig --name "${eks_cluster}" --kubeconfig lambda/kubeconfig
-sed -i "s/command: aws-iam-authenticator/command: .\/aws-iam-authenticator/g" lambda/kubeconfig
+sed -i -e "s/command: aws-iam-authenticator/command: .\/aws-iam-authenticator/g" lambda/kubeconfig
 
 cp extra/aws-iam-authenticator lambda/
 
