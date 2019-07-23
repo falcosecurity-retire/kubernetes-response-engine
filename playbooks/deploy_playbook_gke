@@ -25,7 +25,6 @@ EOF
   exit 1
 }
 
-#function join { local IFS="$1"; shift; echo "$*"; }
 function join { local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}"; }
 
 
