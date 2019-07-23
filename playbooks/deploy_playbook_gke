@@ -25,7 +25,8 @@ EOF
   exit 1
 }
 
-function join { local IFS="$1"; shift; echo "$*"; }
+function join { local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}"; }
+
 
 playbook=""
 environment=("KUBECONFIG=kubeconfig" "KUBERNETES_LOAD_KUBE_CONFIG=1")
@@ -96,7 +97,7 @@ gcloud functions deploy ${playbook} \
   --entry-point handler \
   --runtime python37 \
   --trigger-topic ${topic_name} \
-  --set-env-vars="$(join , ${environment[@]})"
+  --set-env-vars="^,,^$(join ,, ${environment[@]})"
 
 cd ..
 rm -fr ${directory} requirements.txt
